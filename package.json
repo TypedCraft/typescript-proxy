@@ -1,0 +1,21 @@
+{
+  "name": "typecraft",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --watch test/index.ts",
+    "start": "bun test/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/ws": "^8.18.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "ws": "^8.18.3",
+    "zod": "^4.1.8"
+  }
+}
