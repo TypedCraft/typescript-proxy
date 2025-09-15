@@ -1,3 +1,4 @@
+import type { Gui } from "./classes/Gui";
 import { Player } from "./classes/Player";
 
 export type UUID = string;
@@ -107,7 +108,22 @@ export interface PlayerChatEvent {
   message: string;
 }
 
-export type GuiClickPayload = {
+// export type GuiClickPayload = {
+//   menuInstanceId: string;
+//   rawSlot: number;
+//   slot: number;
+//   region: "TOP" | "PLAYER" | "OTHER";
+//   clickType: string;
+//   action: string;
+//   shift: boolean;
+//   uuid: string;
+//   item?: ItemDef | null;
+//   cursorItem?: ItemDef | null;
+//   hotbarItem?: ItemDef | null;
+//   hotbarButton?: number;
+// };
+
+export type GuiClickEvent = {
   menuInstanceId: string;
   rawSlot: number;
   slot: number;
@@ -115,15 +131,13 @@ export type GuiClickPayload = {
   clickType: string;
   action: string;
   shift: boolean;
-  playerUuid: string;
-  item?: ItemDef | null;
-  cursorItem?: ItemDef | null;
-  hotbarItem?: ItemDef | null;
-  hotbarButton?: number;
+  uuid: UUID;
+  item: ItemDef | null;
 };
 export interface GuiCloseEvent {
   menuInstanceId: string;
   uuid: UUID;
+  gui: Gui | null;
 }
 
 export type CmdChatSetMode = { mode: "VANILLA" | "PROXY" };
@@ -169,7 +183,7 @@ export const EventSchemas = {
 export type EventPayloadMap = {
   "Player.Join": PlayerJoinEvent;
   "Player.Chat": PlayerChatEvent;
-  "Gui.Click": GuiClickPayload;
+  "Gui.Click": GuiClickEvent;
   "Gui.Close": GuiCloseEvent;
   "Command.Execute": CommandExecuteEvent;
   "Server.CommandsReady": ServerCommandsReadyEvent;
@@ -195,11 +209,23 @@ export interface GuiSlot {
   item: ItemDef;
 }
 
+export interface TGui {
+  menuInstanceId: string;
+  size: number;
+  viewers: Array<Pick<TPlayer, "uuid" | "name">>;
+  slots: Array<GuiSlot>;
+}
+
 export interface CmdGuiOpen {
   uuid: UUID;
   title: string;
   size: number;
   slots?: GuiSlot[];
+}
+
+export interface CmdGuiClose {
+  menuInstanceId: string;
+  uuid: UUID;
 }
 
 export interface CmdGuiOpenRes {
@@ -240,6 +266,12 @@ export interface CmdPlayerGet {
   uuid?: UUID;
   name?: string;
 }
+
+export interface CmdGuiGet {
+  menuInstanceId: UUID;
+}
+
+export type GuiGetRes = (TGui & { ok: true }) | { ok: false };
 
 export interface CmdCommandRegister {
   name: string;

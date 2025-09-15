@@ -23,9 +23,14 @@ import type {
   CmdPlayerGet,
   CmdChatBroadcast,
   CmdChatSetMode,
+  CmdGuiClose,
+  CmdGuiGet,
+  GuiGetRes,
+  TGui,
 } from "./schemas";
 import { factoryRegistry } from "./factories";
-import type { Player } from "./classes/Player";
+import { Player } from "./classes/Player";
+import { Gui } from "./classes/Gui";
 
 type Listener<K extends EventKind> = (payload: EventPayload<K>) => void;
 
@@ -168,6 +173,33 @@ export class Bridge {
               (evt as any).payload = { ...(evt.payload as object), player };
             }
           }
+        } else if (kind === "Gui.Close") {
+          if ("menuInstanceId" in evt.payload) {
+            try {
+              // First try to get the GUI data from the factory
+              const guiData = await factoryRegistry.create<TGui | null>(
+                "gui",
+                this,
+                evt.payload as any
+              );
+
+              // Update the payload with the Gui instance if data is available
+              (evt as any).payload = {
+                ...(evt.payload as object),
+                gui: guiData ? new Gui(this, guiData) : null,
+              };
+            } catch (error) {
+              console.error(
+                "[Bridge] Failed to create GUI instance for close event:",
+                error
+              );
+              // Even if we fail, we still want to pass along the original payload
+              (evt as any).payload = {
+                ...(evt.payload as object),
+                gui: null,
+              };
+            }
+          }
         }
 
         const handlers = this.listeners.get(kind);
@@ -237,6 +269,10 @@ export class Bridge {
     updateSlots: (p: CmdGuiUpdateSlots): Promise<void> => {
       return this.cmd<void>("Gui.updateSlots", p);
     },
+    close: (p: CmdGuiClose): Promise<void> => {
+      return this.cmd<void>("Gui.close", p);
+    },
+    get: (p: CmdGuiGet) => this.cmd<GuiGetRes>("Gui.get", p),
   } as const;
 
   entity = {
