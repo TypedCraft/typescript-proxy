@@ -1,46 +1,29 @@
 import WebSocket from "ws";
 import { randomUUID } from "crypto";
-import type {
-  EventKind,
-  EventPayload,
-  EventPayloadMap,
-  ServerMessage,
-  EnvelopeRes,
-  EnvelopeErr,
-  EnvelopeEvt,
-  CmdCommandDispatch,
-  CmdCommandRegister,
-  CmdCommandUnregister,
-  CmdEntitySpawn,
-  CmdEntitySpawnRes,
-  CmdGuiOpen,
-  CmdGuiOpenRes,
-  CmdGuiUpdateSlots,
-  CmdPlayerGive,
-  CmdPlayerSendMessage,
-  CmdRecipeUpsertShaped,
-  TPlayer,
-  CmdPlayerGet,
-  CmdChatBroadcast,
-  CmdChatSetMode,
-  CmdGuiClose,
-  CmdGuiGet,
-  GuiGetRes,
-  TGui,
-} from "./schemas";
 import { factoryRegistry } from "./factories";
 import { Player } from "./classes/Player";
 import { Gui } from "./classes/Gui";
+import type { Commands, Events, Websocket } from "./types";
 
-type Listener<K extends EventKind> = (payload: EventPayload<K>) => void;
+type Listener<K extends Websocket.Events.Kind> = (
+  payload: Websocket.Events.Payload<K>
+) => void;
 
 export class Bridge {
   private ws?: WebSocket;
   private pending = new Map<
     string,
-    (msg: Extract<ServerMessage, { t: "res" | "err" }>) => void
+    (
+      msg: Extract<
+        Websocket.Envelope.Response | Websocket.Envelope.Error,
+        { t: "res" | "err" }
+      >
+    ) => void
   >();
-  private listeners = new Map<EventKind, Listener<EventKind>[]>();
+  private listeners = new Map<
+    Websocket.Events.Kind,
+    Listener<Websocket.Events.Kind>[]
+  >();
 
   // reconnect state
   private reconnecting = false;
@@ -137,7 +120,7 @@ export class Bridge {
     this.heartbeatInterval = undefined;
   }
 
-  private send(m: ServerMessage) {
+  private send(m: Websocket.Envelope.ServerMessage) {
     this.ws?.send(JSON.stringify(m));
   }
 
@@ -155,10 +138,10 @@ export class Bridge {
       return;
     }
 
-    const message = parsed as ServerMessage;
+    const message = parsed as Websocket.Envelope.ServerMessage;
 
     if (message.t === "evt") {
-      const evt = message as EnvelopeEvt<EventKind>;
+      const evt = message as Websocket.Envelope.Event;
       const kind = evt.kind;
 
       try {
@@ -173,34 +156,36 @@ export class Bridge {
               (evt as any).payload = { ...(evt.payload as object), player };
             }
           }
-        } else if (kind === "Gui.Close") {
-          if ("menuInstanceId" in evt.payload) {
-            try {
-              // First try to get the GUI data from the factory
-              const guiData = await factoryRegistry.create<TGui | null>(
-                "gui",
-                this,
-                evt.payload as any
-              );
-
-              // Update the payload with the Gui instance if data is available
-              (evt as any).payload = {
-                ...(evt.payload as object),
-                gui: guiData ? new Gui(this, guiData) : null,
-              };
-            } catch (error) {
-              console.error(
-                "[Bridge] Failed to create GUI instance for close event:",
-                error
-              );
-              // Even if we fail, we still want to pass along the original payload
-              (evt as any).payload = {
-                ...(evt.payload as object),
-                gui: null,
-              };
-            }
-          }
         }
+        // Can't find a use for this yet, Gui.Close can't load the GUI if it's closed so... maybe we'll find a use in the feature for an event.
+        // else if (kind === "Gui.Close") {
+        //   if ("menuInstanceId" in evt.payload) {
+        //     try {
+        //       // First try to get the GUI data from the factory
+        //       const guiData = await factoryRegistry.create<TGui | null>(
+        //         "gui",
+        //         this,
+        //         evt.payload as any
+        //       );
+
+        //       // Update the payload with the Gui instance if data is available
+        //       (evt as any).payload = {
+        //         ...(evt.payload as object),
+        //         gui: guiData ? new Gui(this, guiData) : null,
+        //       };
+        //     } catch (error) {
+        //       console.error(
+        //         "[Bridge] Failed to create GUI instance for close event:",
+        //         error
+        //       );
+        //       // Even if we fail, we still want to pass along the original payload
+        //       (evt as any).payload = {
+        //         ...(evt.payload as object),
+        //         gui: null,
+        //       };
+        //     }
+        //   }
+        // }
 
         const handlers = this.listeners.get(kind);
         if (handlers) {
@@ -219,10 +204,14 @@ export class Bridge {
     }
 
     if (message.t === "res" || message.t === "err") {
-      const cb = this.pending.get((message as EnvelopeRes | EnvelopeErr).id);
+      const cb = this.pending.get(
+        (message as Websocket.Envelope.Response | Websocket.Envelope.Error).id
+      );
       if (cb) {
-        this.pending.delete((message as EnvelopeRes | EnvelopeErr).id);
-        cb(message as EnvelopeRes | EnvelopeErr);
+        this.pending.delete(
+          (message as Websocket.Envelope.Response | Websocket.Envelope.Error).id
+        );
+        cb(message as Websocket.Envelope.Response | Websocket.Envelope.Error);
       }
       return;
     }
@@ -230,7 +219,7 @@ export class Bridge {
 
   private cmd<T = unknown>(kind: string, payload: unknown): Promise<T> {
     const id = randomUUID();
-    const msg: ServerMessage = { t: "cmd", id, kind, payload };
+    const msg: Websocket.Envelope.Command = { t: "cmd", id, kind, payload };
     this.send(msg);
 
     return new Promise<T>((resolve, reject) => {
@@ -247,61 +236,68 @@ export class Bridge {
   }
 
   // public api
-  on<K extends EventKind>(
+  on<K extends Events.Kind>(
     kind: K,
-    fn: (payload: EventPayload<K>) => void
+    fn: (payload: Websocket.Events.Payload<K>) => void
   ): void {
-    const arr = this.listeners.get(kind) ?? [];
-    arr.push(fn as Listener<EventKind>);
-    this.listeners.set(kind, arr);
+    const currentListeners = this.listeners.get(kind) as
+      | Array<typeof fn>
+      | undefined;
+    // @ts-ignore
+    this.listeners.set(kind, [...(currentListeners || []), fn]);
   }
 
   recipe = {
-    upsertShaped: (p: CmdRecipeUpsertShaped) => {
-      this.cmd("Recipe.upsertShaped", p);
+    upsertShaped: (p: Commands.Recipe.UpsertShaped) => {
+      return this.cmd<void>("Recipe.upsertShaped", p);
     },
   } as const;
 
   gui = {
-    open: (p: CmdGuiOpen): Promise<CmdGuiOpenRes> => {
-      return this.cmd<CmdGuiOpenRes>("Gui.open", p);
+    open: (p: Commands.Gui.Open): Promise<Commands.Gui.OpenResponse> => {
+      return this.cmd<Commands.Gui.OpenResponse>("Gui.open", p);
     },
-    updateSlots: (p: CmdGuiUpdateSlots): Promise<void> => {
+    updateSlots: (p: Commands.Gui.UpdateSlots): Promise<void> => {
       return this.cmd<void>("Gui.updateSlots", p);
     },
-    close: (p: CmdGuiClose): Promise<void> => {
+    close: (p: Commands.Gui.Close): Promise<void> => {
       return this.cmd<void>("Gui.close", p);
     },
-    get: (p: CmdGuiGet) => this.cmd<GuiGetRes>("Gui.get", p),
+    get: (p: Commands.Gui.Get) =>
+      this.cmd<Commands.Gui.GetResponse>("Gui.get", p),
   } as const;
 
   entity = {
-    spawn: (p: CmdEntitySpawn): Promise<CmdEntitySpawnRes> => {
-      return this.cmd<CmdEntitySpawnRes>("Entity.spawn", p);
+    spawn: (
+      p: Commands.Entity.Spawn
+    ): Promise<Commands.Entity.SpawnResponse> => {
+      return this.cmd<Commands.Entity.SpawnResponse>("Entity.spawn", p);
     },
   } as const;
 
   player = {
-    sendMessage: (p: CmdPlayerSendMessage): Promise<void> =>
+    sendMessage: (p: Commands.Player.SendMessage): Promise<void> =>
       this.cmd<void>("Player.sendMessage", p),
-    give: (p: CmdPlayerGive): Promise<void> => this.cmd<void>("Player.give", p),
-    get: (p: CmdPlayerGet) =>
-      this.cmd<{ ok: boolean; player: TPlayer }>("Player.get", p),
+    give: (p: Commands.Player.Give): Promise<void> =>
+      this.cmd<void>("Player.give", p),
+    get: (p: Commands.Player.Get) =>
+      this.cmd<Commands.Player.GetResponse>("Player.get", p),
   } as const;
 
   command = {
-    register: (p: CmdCommandRegister): Promise<void> =>
+    register: (p: Commands.Command.Register): Promise<void> =>
       this.cmd<void>("Command.register", p),
-    unregister: (p: CmdCommandUnregister): Promise<void> =>
+    unregister: (p: Commands.Command.Unregister): Promise<void> =>
       this.cmd<void>("Command.unregister", p),
-    dispatch: (p: CmdCommandDispatch): Promise<void> =>
+    dispatch: (p: Commands.Command.Dispatch): Promise<void> =>
       this.cmd<void>("Command.dispatch", p),
   } as const;
 
   events = {
     chat: {
-      setMode: (p: CmdChatSetMode) => this.cmd("Events.Chat.setMode", p),
-      broadcast: (p: CmdChatBroadcast) => this.cmd("Events.Chat.broadcast", p),
+      setMode: (p: Commands.Chat.SetMode) => this.cmd("Events.Chat.setMode", p),
+      broadcast: (p: Commands.Chat.Broadcast) =>
+        this.cmd("Events.Chat.broadcast", p),
     },
   } as const;
 }

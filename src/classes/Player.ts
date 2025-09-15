@@ -53,6 +53,10 @@ export class Player {
     return this._player.health;
   }
 
+  heal(): Promise<void> {
+    return this.bridge.player.heal({ uuid: this.uuid });
+  }
+
   get compassTarget(): string | null {
     return this._player.compassTarget;
   }
