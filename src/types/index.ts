@@ -39,6 +39,11 @@ export namespace Minecraft {
     totalExperience: number | null;
     ping: number | null;
     walkSpeed: number | null;
+    foodLevel: number | null;
+  }
+
+  export interface PlayerType {
+    uuid: UUID;
   }
 
   export namespace Recipe {
@@ -88,6 +93,26 @@ export namespace Commands {
     export interface GetResponse {
       ok: boolean;
       player: Player;
+    }
+    export interface Heal {
+      uuid: UUID;
+      amount?: number;
+    }
+    export interface SetFoodLevel {
+      uuid: UUID;
+      amount?: number;
+    }
+    export interface SetFlying {
+      uuid: UUID;
+      value?: boolean;
+    }
+    export interface SetOp {
+      uuid: UUID;
+      value?: boolean;
+    }
+    export interface SetInvulnerable {
+      uuid: UUID;
+      value?: boolean;
     }
   }
   export namespace Chat {

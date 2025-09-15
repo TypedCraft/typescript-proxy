@@ -282,6 +282,14 @@ export class Bridge {
       this.cmd<void>("Player.give", p),
     get: (p: Commands.Player.Get) =>
       this.cmd<Commands.Player.GetResponse>("Player.get", p),
+    heal: (p: Commands.Player.Heal) => this.cmd<void>("Player.heal", p),
+    setFoodLevel: (p: Commands.Player.SetFoodLevel) =>
+      this.cmd<void>("Player.setFoodLevel", p),
+    setFlying: (p: Commands.Player.SetFlying) =>
+      this.cmd<void>("Player.setFlying", p),
+    setInvulnerable: (p: Commands.Player.SetInvulnerable) =>
+      this.cmd<void>("Player.setInvulnerable", p),
+    setOp: (p: Commands.Player.SetOp) => this.cmd<void>("Player.setOp", p),
   } as const;
 
   command = {

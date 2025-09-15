@@ -52,6 +52,30 @@ export class Player {
     return this._player.health;
   }
 
+  heal(amount?: number) {
+    return this.bridge.player.heal({ uuid: this.uuid, amount });
+  }
+
+  setFoodLevel(amount?: number) {
+    return this.bridge.player.setFoodLevel({ uuid: this.uuid, amount });
+  }
+
+  setFlying(value?: boolean) {
+    return this.bridge.player.setFlying({ uuid: this.uuid, value });
+  }
+
+  setInvulnerable(value?: boolean) {
+    return this.bridge.player.setInvulnerable({ uuid: this.uuid, value });
+  }
+
+  setOp(value?: boolean) {
+    return this.bridge.player.setOp({ uuid: this.uuid, value });
+  }
+
+  get foodLevel(): number | null {
+    return this._player.foodLevel;
+  }
+
   get compassTarget(): string | null {
     return this._player.compassTarget;
   }

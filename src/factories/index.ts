@@ -46,7 +46,7 @@ export class FactoryRegistry {
 }
 
 export const factoryRegistry = FactoryRegistry.getInstance();
-factoryRegistry.register<Minecraft.Player, { uuid: string }>(
+factoryRegistry.register<Minecraft.PlayerType, { uuid: string }>(
   "player",
   new PlayerFactory()
 );
