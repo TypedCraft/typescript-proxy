@@ -1,6 +1,9 @@
 import { Bridge } from "../src";
 import { Player } from "../src/classes/Player";
+import { GuiFactory } from "../src/factories/GuiFactory";
 import { escapeMini } from "../src/utils";
+
+const guiFactory = new GuiFactory();
 
 const bridge = new Bridge(process.env.WEBSOCKET_URL);
 
@@ -38,8 +41,10 @@ bridge.on("Player.Chat", async ({ player, message }) => {
   await bridge.events.chat.broadcast({ text: rendered, format: "mini" });
 });
 
-bridge.on("Player.Join", async ({}) => {
-  // Join Event
+bridge.on("Player.Join", async ({ player }) => {
+  await bridge.events.chat.broadcast({
+    text: `<gray>[</gray><green>TypeCraft</green><gray>]</gray> <yellow>${player.name}</yellow><white> joined the game.</white>`,
+  });
 });
 
 bridge.on("Command.Execute", async ({ name, args, sender }) => {
@@ -52,11 +57,10 @@ bridge.on("Command.Execute", async ({ name, args, sender }) => {
       size: 27,
       slots: [
         {
-          slot: 8,
+          slot: 26,
           item: {
-            material: "DIAMOND",
-            lore: ["<#FF0000>test"],
-            name: "<rainbow>test name",
+            material: "REDSTONE_BLOCK",
+            name: "<red>Close Menu",
           },
         },
       ],
@@ -64,6 +68,8 @@ bridge.on("Command.Execute", async ({ name, args, sender }) => {
   }
 });
 
-bridge.on("Gui.Click", async (e) => {
-  console.log(e);
+bridge.on("Gui.Click", async ({ menuInstanceId, item, uuid }) => {
+  if (item?.name == "Close Menu") {
+    await bridge.gui.close({ menuInstanceId, uuid });
+  }
 });
