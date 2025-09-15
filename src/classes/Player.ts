@@ -1,16 +1,15 @@
 import type { Bridge } from "..";
-import type { CmdPlayerGet, TPlayer } from "../schemas";
-import type { ItemDef } from "../schemas";
+import type { Commands, Minecraft, UUID } from "../types";
 
 export class Player {
   constructor(
     public readonly bridge: Bridge,
-    private readonly _player: TPlayer
+    private readonly _player: Minecraft.Player
   ) {}
 
   static async get(
     bridge: Bridge,
-    uuidOrName: CmdPlayerGet
+    uuidOrName: Commands.Player.Get
   ): Promise<Player | null> {
     try {
       const response = await bridge.player.get(uuidOrName);
@@ -25,7 +24,7 @@ export class Player {
     return this._player.name;
   }
 
-  get uuid(): string {
+  get uuid(): UUID {
     return this._player.uuid;
   }
 
@@ -51,10 +50,6 @@ export class Player {
 
   get health(): number | null {
     return this._player.health;
-  }
-
-  heal(): Promise<void> {
-    return this.bridge.player.heal({ uuid: this.uuid });
   }
 
   get compassTarget(): string | null {
@@ -100,7 +95,7 @@ export class Player {
     });
   }
 
-  give(item: ItemDef): Promise<void> {
+  give(item: Minecraft.Item): Promise<void> {
     return this.bridge.player.give({
       uuid: this.uuid,
       item,

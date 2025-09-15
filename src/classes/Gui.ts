@@ -1,13 +1,16 @@
 import type { Bridge } from "..";
-import type { TGui, UUID } from "../schemas";
+import type { Minecraft, UUID } from "../types";
 
 export class Gui {
-  private _gui: TGui;
-  constructor(public readonly bridge: Bridge, public readonly payload: TGui) {
+  private _gui: Minecraft.Gui.Type;
+  constructor(
+    public readonly bridge: Bridge,
+    public readonly payload: Minecraft.Gui.Type
+  ) {
     this._gui = payload;
   }
 
-  get gui(): TGui {
+  get gui(): Minecraft.Gui.Type {
     return this._gui;
   }
 

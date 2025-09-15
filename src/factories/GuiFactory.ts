@@ -1,13 +1,15 @@
 import type { Factory } from ".";
 import type { Bridge } from "..";
 import { Gui } from "../classes/Gui";
-import type { TGui, UUID, ItemDef } from "../schemas";
+import type { Minecraft, UUID } from "../types";
 
-export class GuiFactory implements Factory<TGui, { menuInstanceId: UUID }> {
+export class GuiFactory
+  implements Factory<Minecraft.Gui.Type, { menuInstanceId: UUID }>
+{
   async create(
     bridge: Bridge,
     payload: { menuInstanceId: UUID }
-  ): Promise<TGui> {
+  ): Promise<Minecraft.Gui.Type> {
     try {
       // Always fetch the GUI data using the menuInstanceId
       const gui = await Gui.get(bridge, payload.menuInstanceId);

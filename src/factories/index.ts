@@ -1,8 +1,7 @@
 import type { Bridge } from "..";
 import { PlayerFactory } from "./PlayerFactory";
-import type { TGui, TPlayer, UUID } from "../schemas";
 import { GuiFactory } from "./GuiFactory";
-import type { Gui } from "../classes/Gui";
+import type { Minecraft } from "../types";
 
 export interface Factory<T, P> {
   create(bridge: Bridge, payload: P): T | Promise<T>;
@@ -47,8 +46,11 @@ export class FactoryRegistry {
 }
 
 export const factoryRegistry = FactoryRegistry.getInstance();
-factoryRegistry.register<TPlayer, TPlayer>("player", new PlayerFactory());
-factoryRegistry.register<TGui, { menuInstanceId: string }>(
+factoryRegistry.register<Minecraft.Player, { uuid: string }>(
+  "player",
+  new PlayerFactory()
+);
+factoryRegistry.register<Minecraft.Gui.Type, { menuInstanceId: string }>(
   "gui",
   new GuiFactory()
 );
