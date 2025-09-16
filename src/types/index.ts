@@ -40,6 +40,8 @@ export namespace Minecraft {
     ping: number | null;
     walkSpeed: number | null;
     foodLevel: number | null;
+    isFlying: boolean | null;
+    isBanned: boolean | null;
   }
 
   export interface PlayerType {
@@ -77,6 +79,10 @@ export namespace Minecraft {
 }
 
 export namespace Commands {
+  interface UpdateBoolean {
+    uuid: UUID;
+    value?: boolean;
+  }
   export namespace Player {
     export interface SendMessage {
       uuid: UUID;
@@ -92,7 +98,7 @@ export namespace Commands {
     }
     export interface GetResponse {
       ok: boolean;
-      player: Player;
+      player: Minecraft.Player;
     }
     export interface Heal {
       uuid: UUID;
@@ -102,18 +108,10 @@ export namespace Commands {
       uuid: UUID;
       amount?: number;
     }
-    export interface SetFlying {
-      uuid: UUID;
-      value?: boolean;
-    }
-    export interface SetOp {
-      uuid: UUID;
-      value?: boolean;
-    }
-    export interface SetInvulnerable {
-      uuid: UUID;
-      value?: boolean;
-    }
+    export type SetFlying = UpdateBoolean;
+    export type SetOp = UpdateBoolean;
+    export type SetInvulnerable = UpdateBoolean;
+    export type SetAllowFlight = UpdateBoolean;
   }
   export namespace Chat {
     export interface Broadcast {

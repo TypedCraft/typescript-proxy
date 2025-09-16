@@ -1,4 +1,5 @@
 import { Bridge } from "../src";
+import { Player } from "../src/classes/Player";
 import { Events } from "../src/types";
 import { escapeMini } from "../src/utils";
 
@@ -39,6 +40,7 @@ bridge.on(Events.Player.Chat, async ({ player, message }) => {
 });
 
 bridge.on(Events.Player.Join, async ({ player }) => {
+  if (!player.online) return;
   await bridge.events.chat.broadcast({
     text: `<gray>[</gray><green>TypeCraft</green><gray>]</gray> <yellow>${player.name}</yellow><white> joined the game.</white>`,
   });
@@ -48,20 +50,15 @@ bridge.on(Events.Command.Execute, async ({ name, args, sender }) => {
   if (name === "test_command") {
     if (sender.type !== "PLAYER") return;
 
-    await bridge.gui.open({
-      uuid: sender.uuid,
-      title: "Test GUI",
-      size: 27,
-      slots: [
-        {
-          slot: 26,
-          item: {
-            material: "REDSTONE_BLOCK",
-            name: "<red>Close Menu",
-          },
-        },
-      ],
-    });
+    const player = await Player.get(bridge, { uuid: sender.uuid });
+    if (!player || !player.online) return;
+
+    player.heal();
+    player.setAllowFlight(true);
+    player
+      .setFlying()
+      .catch((e) => bridge.HandleError(e).MessagePlayer(player));
+    player.setFoodLevel();
   }
 });
 
