@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { factoryRegistry } from "./factories";
 import { Player } from "./classes/Player";
 import { Gui } from "./classes/Gui";
-import type { Commands, Events, Websocket } from "./types";
+import type { Commands, Events, Minecraft, Websocket } from "./types";
 
 type Listener<K extends Websocket.Events.Kind> = (
   payload: Websocket.Events.Payload<K>
@@ -290,6 +290,8 @@ export class Bridge {
     setInvulnerable: (p: Commands.Player.SetInvulnerable) =>
       this.cmd<void>("Player.setInvulnerable", p),
     setOp: (p: Commands.Player.SetOp) => this.cmd<void>("Player.setOp", p),
+    setAllowFlight: (p: Commands.Player.SetAllowFlight) =>
+      this.cmd<void>("Player.setAllowFlight", p),
   } as const;
 
   command = {
@@ -308,4 +310,16 @@ export class Bridge {
         this.cmd("Events.Chat.broadcast", p),
     },
   } as const;
+
+  HandleError(e: Error) {
+    console.error(e);
+    return {
+      MessagePlayer: (player: Player) => {
+        // errors from java are usually in the format of "CODE: MESSAGE (java function suggestion)"
+        const parseMessage = e.message.split(":")[1]?.split("(")[0]?.trim();
+        const rendered = `<gray>[</gray><red>ERROR</red><gray>]</gray> <white>${parseMessage}</white>`;
+        player.sendMessage(rendered);
+      },
+    };
+  }
 }
